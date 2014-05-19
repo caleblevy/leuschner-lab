@@ -1,0 +1,21 @@
+--- tracking.py	2014-04-27 00:51:30.000000000 -0700
++++ tracking_skip_bad.py	2014-04-27 00:50:48.000000000 -0700
+@@ -224,6 +224,10 @@
+                 time.sleep(0.025)
+             else:
+                 print 'Waiting...\n'
++                tr_status['status'] = 'idle'
++                with open(trackfile, 'w') as pkl:
++                    pickle.dump(tr_status, pkl)
++
+                 while obs_status['ready']:
+                     # Fool observe.py by thinking that the diode has been set.
+                     # This is because observe.py will just wait until it sees
+@@ -417,6 +421,7 @@
+         if debug or verbose:
+             print time.asctime()
+             print 'Iterations complete:', num_iter, '\n'
++        time.sleep(1)
+ 
+     # This is the song that never ends
+     # It just goes on and on my friends

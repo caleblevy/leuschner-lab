@@ -1,0 +1,141 @@
+--- observe.py	2014-04-26 18:22:35.000000000 -0700
++++ observe_safe_pkl.py	2014-04-26 23:54:41.000000000 -0700
+@@ -49,7 +49,6 @@
+ import dish_synth
+ import takespec
+ 
+-
+ def main():
+     """Control Leuschner data collection.
+ 
+@@ -110,6 +109,8 @@
+     while not check_pkl(trackstr, 'status', value):
+         if check_pkl(trackstr, 'status', 'finished'):
+             return False
++        if check_pkl(trackstr, 'status', 'idle'):
++            break
+         time.sleep(wtime)
+     return True
+ 
+@@ -185,23 +186,45 @@
+     try:
+         # Take spectrum at f_high
+         print 'Recording %s' % (fname+'_left')
+-        dsynth.set_freq(f_high)
+-        takespec.takeSpec(fname+'_left', numSpec=n_obs)
++        #dsynth.set_freq(f_high)
++        #takespec.takeSpec(fname+'_left', numSpec=n_obs)
++        check_idle(dsynth.set_freq, trackstr, (f_high,), {})
++        check_idle(takespec.takeSpec,
++                   trackstr,
++                   (fname+'_left',),
++                   {'numSpec':n_obs})
+         # Take noise at f_high, request on/off
+-        set_want_diode(True, obsvrstr, trackstr)
+-        takespec.takeSpec(fname+'_left_cal', numSpec=n_cal)
+-        set_want_diode(False, obsvrstr, trackstr)
++        #set_want_diode(True, obsvrstr, trackstr)
++        #takespec.takeSpec(fname+'_left_cal', numSpec=n_cal)
++        #set_want_diode(False, obsvrstr, trackstr)
++        check_idle(set_want_diode, trackstr, (True, obsvrstr, trackstr), {})
++        check_idle(takespec.takeSpec,
++                   trackstr,
++                   (fname+'_left_cal',),
++                   {'numSpec':n_cal})
++        check_idle(set_want_diode, trackstr, (False, obsvrstr, trackstr), {})
+ 
+         # Take spectrum at f_low
+         print 'Recording %s' % (fname+'_right')
+-        dsynth.set_freq(f_low)
+-        takespec.takeSpec(fname+'_right', numSpec=n_obs)
++        #dsynth.set_freq(f_low)
++        #takespec.takeSpec(fname+'_right', numSpec=n_obs)
++        check_idle(dsynth.set_freq, trackstr, (f_low,), {})
++        check_idle(takespec.takeSpec,
++                   trackstr,
++                   (fname+'_right',),
++                   {'numSpec':n_obs})
+         # Take noise at f_low, request on/off
+-        set_want_diode(True, obsvrstr, trackstr)
+-        takespec.takeSpec(fname+'_right_cal', numSpec=n_cal)
+-        set_want_diode(False, obsvrstr, trackstr)
++        #set_want_diode(True, obsvrstr, trackstr)
++        #takespec.takeSpec(fname+'_right_cal', numSpec=n_cal)
++        #set_want_diode(False, obsvrstr, trackstr)
++        check_idle(set_want_diode, trackstr, (True, obsvrstr, trackstr), {})
++        check_idle(takespec.takeSpec,
++                   trackstr,
++                   (fname+'_right_cal',),
++                   {'numSpec':n_cal})
++        check_idle(set_want_diode, trackstr, (False, obsvrstr, trackstr), {})
+ 
+-    # Need to figure out what Exceptions can be thrown...
++    # check_idle raises exceptions if the dish isn't pointing
+     except Exception as e:  # This won't catch KeyboardInterrupt etc.
+         success = False
+         print 'Error in data collection: %s' % e
+@@ -225,6 +248,20 @@
+     If Aaron/Karto/Baylee tweak stuff, may need to change..."""
+     return int(float(t) / 0.692) + 1  # 0.692 sec. / spectrum
+ 
++# EDIT: Domagalski (04/26/2014 10:15PM)
++# This function is for making sure that the dish is actually tracking an object
++# before performing any of the functions in record_pnt_data. If the object is
++# not being tracked, then raise an error to go to the failure state of the run.
++def check_idle(function, trackstr, fargs, fkargs):
++    """
++    This function checks to see if the dish is idle because it can't be
++    pointed. If it is idle, raise an error to trigger an unsuccessful
++    data collection. If the dish is pointing, then run some function.
++    """
++    if check_pkl(trackstr, 'status', 'idle'):
++        raise IOError('Tracker cannot point to coordinates.')
++    return function(*fargs, **fkargs)
++
+ 
+ ################
+ # Pickle methods
+@@ -258,19 +295,35 @@
+     pkl[key] = value
+     make_pkl(fname, pkl)
+ 
++################################################################################
++# EDIT: Domagalski (04/26/2014, 8:45 PM)
++# Our first run got killed by an EOFError occurring in one of the pickle
++# routines, so I've decided to modify them to prevent that from happening.
++################################################################################
++
++errtime = 0.25
++
+ def make_pkl(fname, thing):
+     """Pickle Python thing, given pkl filename (string)"""
+-    pkl_file = open(fname, 'wb')
+-    pickle.dump(thing, pkl_file)
+-    pkl_file.close()
++    global errtime
++    while True:
++        try:
++            with open(fname, 'wb') as pkl_file:
++                pickle.dump(thing, pkl_file)
++            return
++        except EOFError:
++            time.sleep(errtime)
+ 
+ def get_pkl(fname):
+     """Extract object from pkl file, given pkl filename (string)"""
+-    pkl_file = open(fname, 'rb')
+-    pkl_dict = pickle.load(pkl_file)
+-    pkl_file.close()
+-    return pkl_dict
+-
++    global errtime
++    while True:
++        try:
++            with open(fname, 'rb') as pkl_file:
++                pkl_dict = pickle.load(pkl_file)
++            return pkl_dict
++        except EOFError:
++            time.sleep(errtime)
+ 
+ if __name__ == "__main__":
+     main()

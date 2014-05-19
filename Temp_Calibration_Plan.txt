@@ -1,0 +1,8 @@
+So... we need to have T such that
+
+Find the total power (is this just sum? sum or absolute value? Square root of sum of squares?) in the 
+
+1) Divide pointwise the signal with spectra by the signal without the spectra. Could I scale the right signal without the spectra on the left in order to get an idea of the baseline right signal without the spectra? It seems like we are solving for two different gains here...
+
+2) The system temperature is just the sum of the powers online divided by the sum of the powers offline. Is this right?
+

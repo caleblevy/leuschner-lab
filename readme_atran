@@ -1,0 +1,12 @@
+Aaron's files (so far)
+(last updated: 2014 April 22)
+
+obs-ctrl/observe.py         script for taking observation
+obs-ctrl/nps_ephem.py       Attempt to generate ephemerides for NPS
+obs-ctrl/catalog.py         Useful object/observer catalog for PyEphem
+obs-ctrl/single_pt_         Perform quick point/data collection with Leuschner
+         leuschner.py
+
+spec_average.py         DON'T MOVE (must fix script otherwise)
+                        Averages all spectra in data/
+                        Outputs .npz files in data-reduce/

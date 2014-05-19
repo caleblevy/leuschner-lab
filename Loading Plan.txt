@@ -1,0 +1,5 @@
+Loading Plan:
+
+First load each pickle (cost is trivial); check its marker says it has been processed before. If not, run spec average, copying the files to data. Then use the .npy files to load into the Data pickle. We want separate copies in case we wish to start over due to mistakes, and we don't want the processing overhead.
+
+If it has been loaded before, skip right past it; it does not matter. Once we have saved the .npy files, save to the same folder.
